@@ -85,11 +85,43 @@ function updateHistoryTable() {
 
 // Initialize HTML5 QR code scanner
 function initializeScanner() {
-    const html5QrcodeScanner = new Html5QrcodeScanner(
-        "reader", { fps: 10, qrbox: 250 }
-    );
-    scanner = html5QrcodeScanner;
-    html5QrcodeScanner.render(onScanSuccess, onScanError);
+    try {
+        const html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader",
+            { 
+                fps: 10,
+                qrbox: { width: 250, height: 150 },
+                aspectRatio: 1.0,
+                showTorchButtonIfSupported: true,
+                formatsToSupport: [ Html5QrcodeSupportedFormats.EAN_13 ],
+                videoConstraints: {
+                    facingMode: "environment",
+                    width: { min: 640, ideal: 1280, max: 1920 },
+                    height: { min: 480, ideal: 720, max: 1080 },
+                    focusMode: "continuous",
+                    advanced: [{
+                        focusMode: "continuous",
+                        zoom: 2.0
+                    }]
+                }
+            }
+        );
+        scanner = html5QrcodeScanner;
+        html5QrcodeScanner.render(onScanSuccess, onScanError);
+        
+        // Add error handler for camera permissions
+        html5QrcodeScanner.getState().then((state) => {
+            if (state !== Html5QrcodeScannerState.SCANNING) {
+                showError("Please allow camera access to scan barcodes");
+            }
+        }).catch((err) => {
+            console.error("Error getting scanner state:", err);
+            showError("Camera access failed. Please make sure you're using HTTPS or localhost, and that camera permissions are granted.");
+        });
+    } catch (err) {
+        console.error("Error initializing scanner:", err);
+        showError("Failed to initialize barcode scanner. Please refresh the page or try a different browser.");
+    }
 }
 
 async function lookupBarcode(barcode) {
