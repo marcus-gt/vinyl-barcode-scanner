@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vinyl Barcode Scanner</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Vinyl Barcode Scanner</h1>
+        <div id="reader"></div>
+        <div id="result-container">
+            <h3>Scanned Barcode:</h3>
+            <p id="barcode-result">No barcode scanned yet</p>
+            <button id="new-scan-btn" class="hidden">New Scan</button>
+            <div id="discogs-result" class="hidden">
+                <h3>Discogs Information:</h3>
+                <div id="discogs-data">
+                    <p id="title"></p>
+                    <p id="year"></p>
+                    <p id="label"></p>
+                    <p id="genres"></p>
+                    <p id="styles"></p>
+                    <p id="musicians"></p>
+                    <p id="discogs-url"></p>
+                    <p id="release-info"></p>
+                </div>
+            </div>
+            <div id="error-message" class="hidden">
+                <p class="error">No Discogs information found for this barcode</p>
+            </div>
+        </div>
+        
+        <div id="scan-history" class="mt-4">
+            <div class="table-header">
+                <h3>Scan History</h3>
+                <div class="table-actions">
+                    <button id="download-csv" class="download-btn">Download CSV</button>
+                    <button id="reset-table" class="reset-btn">Reset Table</button>
+                </div>
+            </div>
+            <table id="history-table">
+                <thead>
+                    <tr>
+                        <th>Artist</th>
+                        <th>Album</th>
+                        <th>Year</th>
+                        <th>Label</th>
+                        <th>Genres</th>
+                        <th>Styles</th>
+                        <th>Musicians</th>
+                        <th>Master URL</th>
+                        <th>Current Release URL</th>
+                        <th>Current Release Year</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="history-tbody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html> 

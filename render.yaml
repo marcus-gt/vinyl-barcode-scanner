@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: vinyl-barcode-scanner
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: cd barcode-scanner && gunicorn server:app
+    envVars:
+      - key: DISCOGS_TOKEN
+        sync: false
+      - key: FLASK_ENV
+        value: production
+    plan: free 
