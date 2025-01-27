@@ -92,6 +92,7 @@ def get_album_data_from_id(id_type: str, item_id: str) -> Optional[Dict[str, Any
             # Get release data directly
             main_release_url = f"https://api.discogs.com/releases/{item_id}"
             main_release_data = make_discogs_request(main_release_url, headers)
+            print(f"Release data: {main_release_data}")  # Debug print
 
             if not main_release_data:
                 return None
@@ -101,6 +102,7 @@ def get_album_data_from_id(id_type: str, item_id: str) -> Optional[Dict[str, Any
             if master_id:
                 master_url = f"https://api.discogs.com/masters/{master_id}"
                 master_data = make_discogs_request(master_url, headers)
+                print(f"Master data: {master_data}")  # Debug print
             else:
                 # Use release data as master data if no master exists
                 master_data = main_release_data
@@ -121,17 +123,26 @@ def get_album_data_from_id(id_type: str, item_id: str) -> Optional[Dict[str, Any
         artist_name = artists[0].get('name', '') if artists else ''
         album_name = main_release_data.get('title', '')
 
+        # Format URLs for web display
+        master_web_url = f"https://www.discogs.com/master/{master_data.get('id')}" if master_data.get('id') else None
+        release_web_url = f"https://www.discogs.com/release/{main_release_data.get('id')}" if main_release_data.get('id') else None
+
+        # Get the original release year from master
+        master_year = master_data.get('year') if master_data else None
+
+        print(f"Master year: {master_year}")  # Debug print
+
         return {
             'artist': artist_name,
             'album': album_name,
-            'year': master_data.get('year') or main_release_data.get('year'),
+            'year': master_year,  # Original release year from master
             'country': main_release_data.get('country'),
-            'genres': ', '.join(master_data.get('genres', [])),
-            'styles': ', '.join(master_data.get('styles', [])),
-            'musicians': '; '.join(musicians),
-            'master_url': master_url,
-            'main_release_url': main_release_url,
-            'uri': f"https://www.discogs.com/{id_type}/{item_id}",
+            'genres': master_data.get('genres', []),
+            'styles': master_data.get('styles', []),
+            'musicians': musicians,
+            'master_url': master_web_url,
+            'main_release_url': release_web_url,
+            'uri': release_web_url,
             'label': labels
         }
 

@@ -13,7 +13,10 @@ export interface VinylRecord {
   genres?: string;
   styles?: string;
   notes?: string;
-  discogs_uri?: string;
+  musicians?: string;
+  master_url?: string;
+  release_url?: string;
+  release_year?: string;
   added_at: string;
   updated_at?: string;
   user_id: string;

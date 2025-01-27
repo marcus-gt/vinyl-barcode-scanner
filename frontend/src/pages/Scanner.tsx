@@ -6,7 +6,7 @@ import { BarcodeFormat } from '@zxing/library';
 import { lookup, records } from '../services/api';
 import type { VinylRecord } from '../types';
 
-function Scanner() {
+export function Scanner() {
   const navigate = useNavigate();
   const [barcode, setBarcode] = useState('');
   const [loading, setLoading] = useState(false);
@@ -15,61 +15,59 @@ function Scanner() {
   const [isScanning, setIsScanning] = useState(false);
 
   const { ref } = useZxing({
-    onResult(result) {
-      setBarcode(result.getText());
-      setIsScanning(false);
-      handleLookup(result.getText());
-    },
-    onError(_error) {
-      // Suppress continuous error logging
-    },
-    paused: !isScanning,
-    constraints: {
-      video: {
-        facingMode: 'environment',
-        width: { min: 640, ideal: 1280, max: 1920 },
-        height: { min: 480, ideal: 720, max: 1080 }
+    onResult: async (result) => {
+      const code = result.getText();
+      setBarcode(code);
+      try {
+        const response = await lookup.byBarcode(code);
+        if (response.success && response.data) {
+          setRecord(response.data);
+          setError(null);
+        } else {
+          setError(response.error || 'Failed to find record');
+          setRecord(null);
+        }
+      } catch (err) {
+        setError('Failed to lookup barcode');
+        setRecord(null);
       }
     },
-    formats: [BarcodeFormat.EAN_13, BarcodeFormat.UPC_A, BarcodeFormat.UPC_E, BarcodeFormat.EAN_8],
-    timeBetweenScans: 500
+    paused: !isScanning
   });
 
-  const handleLookup = async (code: string = barcode) => {
-    if (!code) return;
-
-    setLoading(true);
-    setError(null);
+  const handleManualLookup = async () => {
     try {
-      const response = await lookup.byBarcode(code);
+      const response = await lookup.byBarcode(barcode);
       if (response.success && response.data) {
         setRecord(response.data);
+        setError(null);
       } else {
-        setError(response.error || 'No record found for this barcode');
+        setError(response.error || 'Failed to find record');
+        setRecord(null);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to lookup record');
-    } finally {
-      setLoading(false);
+      setError('Failed to lookup barcode');
+      setRecord(null);
     }
   };
 
-  const handleAdd = async () => {
+  const handleAddToCollection = async () => {
     if (!record) return;
-
-    setLoading(true);
-    setError(null);
+    
     try {
-      const response = await records.add(record);
+      const recordData = {
+        ...record,
+        notes: '',
+      };
+      
+      const response = await records.add(recordData);
       if (response.success) {
-        navigate('/collection');
+        setError('Added to collection!');
       } else {
-        setError(response.error || 'Failed to add record');
+        setError(response.error || 'Failed to add to collection');
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add record');
-    } finally {
-      setLoading(false);
+      setError('Failed to add to collection');
     }
   };
 
@@ -138,11 +136,11 @@ function Scanner() {
                   placeholder="Enter or scan barcode"
                   value={barcode}
                   onChange={(e) => setBarcode(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleLookup()}
+                  onKeyDown={(e) => e.key === 'Enter' && handleManualLookup()}
                 />
               </Group>
               <Group grow>
-                <Button onClick={() => handleLookup()} loading={loading}>
+                <Button onClick={() => handleManualLookup()} loading={loading}>
                   Look up Record
                 </Button>
                 <Button onClick={() => setIsScanning(true)} variant="light">
@@ -162,16 +160,40 @@ function Scanner() {
             <Paper withBorder p="md">
               <Stack>
                 <div>
-                  <Text fw={500} size="lg">{record.album}</Text>
-                  <Text c="dimmed">{record.artist}</Text>
-                  <Text size="sm">Year: {record.year}</Text>
-                  {record.label && <Text size="sm">Label: {record.label}</Text>}
-                  {record.genres && <Text size="sm">Genres: {record.genres}</Text>}
-                  {record.styles && <Text size="sm">Styles: {record.styles}</Text>}
+                  <Text fw={500} size="lg">{record.artist} - {record.album}</Text>
+                  {record.genres && <Text size="sm">Genres: {record.genres.join(', ')}</Text>}
+                  {record.styles && <Text size="sm">Styles: {record.styles.join(', ')}</Text>}
+                  {record.musicians && <Text size="sm">Musicians: {record.musicians.join(', ')}</Text>}
+                  {record.year && <Text size="sm">Original Release Year: {record.year}</Text>}
+                  {record.release_year && <Text size="sm">Current Release Year: {record.release_year}</Text>}
+                  <Group gap="xs" mt="xs">
+                    {record.master_url && (
+                      <Button 
+                        component="a" 
+                        href={record.master_url} 
+                        target="_blank" 
+                        variant="light" 
+                        size="xs"
+                      >
+                        View Master
+                      </Button>
+                    )}
+                    {record.release_url && (
+                      <Button 
+                        component="a" 
+                        href={record.release_url} 
+                        target="_blank" 
+                        variant="light" 
+                        size="xs"
+                      >
+                        View Release
+                      </Button>
+                    )}
+                  </Group>
                 </div>
 
                 <Group>
-                  <Button onClick={handleAdd} loading={loading}>
+                  <Button onClick={handleAddToCollection} loading={loading}>
                     Add to Collection
                   </Button>
                   <Button variant="light" onClick={() => setRecord(null)}>

@@ -64,11 +64,29 @@ def get_user_collection(user_id: str) -> Dict[str, Any]:
 def add_record_to_collection(user_id: str, record_data: Dict[str, Any]) -> Dict[str, Any]:
     """Add a record to user's collection."""
     try:
-        record_data['user_id'] = user_id
-        record_data['added_at'] = datetime.utcnow().isoformat()
-        response = supabase.table('vinyl_records').insert(record_data).execute()
+        # Prepare record data
+        record_to_insert = {
+            'user_id': user_id,
+            'artist': record_data.get('artist'),
+            'album': record_data.get('album'),
+            'year': record_data.get('year'),
+            'barcode': record_data.get('barcode'),
+            'genres': record_data.get('genres', []),
+            'styles': record_data.get('styles', []),
+            'musicians': record_data.get('musicians', []),
+            'master_url': record_data.get('master_url'),
+            'release_url': record_data.get('release_url'),
+            'notes': record_data.get('notes', ''),
+            'added_at': datetime.utcnow().isoformat(),
+            'updated_at': datetime.utcnow().isoformat()
+        }
+        
+        print(f"Adding record to collection: {record_to_insert}")
+        response = supabase.table('vinyl_records').insert(record_to_insert).execute()
+        print(f"Database response: {response.data}")
         return {"success": True, "record": response.data[0]}
     except Exception as e:
+        print(f"Error adding record: {str(e)}")
         return {"success": False, "error": str(e)}
 
 def remove_record_from_collection(user_id: str, record_id: str) -> Dict[str, Any]:

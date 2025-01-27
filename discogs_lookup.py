@@ -92,6 +92,11 @@ def search_by_barcode(barcode: str) -> Optional[Dict[str, Any]]:
             
         # Get the first result
         result = data['results'][0]
+        print(f"Initial search result: {result}")  # Debug print
+        
+        # Store the release year from the search result
+        current_release_year = result.get('year')
+        print(f"Current release year from search: {current_release_year}")  # Debug print
         
         # Get the release ID from the URI
         release_uri = result.get('uri', '')
@@ -105,6 +110,10 @@ def search_by_barcode(barcode: str) -> Optional[Dict[str, Any]]:
             
         release_id = release_id_match.group(1)
         
+        # Get the master ID if available
+        master_id = result.get('master_id')
+        print(f"Found master_id: {master_id}")  # Debug print
+        
         # Use the more robust data fetching process
         album_data = get_album_data_from_id('release', release_id)
         if not album_data:
@@ -112,10 +121,18 @@ def search_by_barcode(barcode: str) -> Optional[Dict[str, Any]]:
             
         # Add additional fields needed for the barcode scanner UI
         album_data['format'] = result.get('format', [])
-        album_data['is_master'] = bool(result.get('master_url'))
-        album_data['release_year'] = result.get('year')
-        album_data['release_url'] = f'https://www.discogs.com{result.get("uri")}'
+        album_data['is_master'] = bool(master_id)
         
+        # Make sure we preserve the release year from the search result
+        album_data['release_year'] = current_release_year
+        print(f"Setting release year to: {current_release_year}")  # Debug print
+        
+        # Format URLs for web display
+        album_data['release_url'] = f'https://www.discogs.com/release/{release_id}'
+        if master_id:
+            album_data['master_url'] = f'https://www.discogs.com/master/{master_id}'
+        
+        print(f"Final album data: {album_data}")  # Debug print
         return album_data
         
     except Exception as e:

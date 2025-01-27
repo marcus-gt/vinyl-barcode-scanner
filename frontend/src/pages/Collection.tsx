@@ -73,21 +73,27 @@ function Collection() {
     }
   };
 
+  if (loading) {
+    return (
+      <Container size="md" py="xl">
+        <Title ta="center" mb="xl">Loading...</Title>
+      </Container>
+    );
+  }
+
   return (
-    <Container size="xl">
+    <Container size="md" py="xl">
       <Title ta="center" mb="xl">Your Vinyl Collection</Title>
-      
+
       {error && (
-        <Text c="red" ta="center" mb="md">
-          {error}
-        </Text>
+        <Text c="red" mb="md">{error}</Text>
       )}
 
       <Grid>
         {userRecords.map(record => (
-          <Grid.Col key={record.id} xs={12} sm={6} lg={4}>
-            <Card shadow="sm" p="lg" radius="md" withBorder>
-              <Stack gap="md">
+          <Grid.Col key={record.id} span={12}>
+            <Card withBorder shadow="sm" p="lg" radius="md">
+              <Stack>
                 <div>
                   <Text fw={500} size="lg">{record.album}</Text>
                   <Text c="dimmed">{record.artist}</Text>
@@ -95,10 +101,36 @@ function Collection() {
                   {record.label && <Text size="sm">Label: {record.label}</Text>}
                   {record.genres && <Text size="sm">Genres: {record.genres}</Text>}
                   {record.styles && <Text size="sm">Styles: {record.styles}</Text>}
+                  {record.musicians && <Text size="sm">Musicians: {record.musicians}</Text>}
+                  {record.release_year && <Text size="sm">Release Year: {record.release_year}</Text>}
+                  <Group gap="xs" mt="xs">
+                    {record.master_url && (
+                      <Button 
+                        component="a" 
+                        href={record.master_url} 
+                        target="_blank" 
+                        variant="light" 
+                        size="xs"
+                      >
+                        View Master
+                      </Button>
+                    )}
+                    {record.release_url && (
+                      <Button 
+                        component="a" 
+                        href={record.release_url} 
+                        target="_blank" 
+                        variant="light" 
+                        size="xs"
+                      >
+                        View Release
+                      </Button>
+                    )}
+                  </Group>
                 </div>
 
                 <div>
-                  <Text fw={500} size="sm">Notes:</Text>
+                  <Text fw={500} size="sm" mb="xs">Notes:</Text>
                   {editingNotes[record.id] !== undefined ? (
                     <Stack gap="xs">
                       <TextInput
@@ -107,19 +139,15 @@ function Collection() {
                           ...prev,
                           [record.id]: e.target.value
                         }))}
-                        placeholder="Add your notes here..."
+                        placeholder="Add notes about this record..."
                       />
                       <Group>
-                        <Button
-                          size="xs"
-                          onClick={() => handleUpdateNotes(record.id)}
-                          loading={loading}
-                        >
+                        <Button size="xs" onClick={() => handleUpdateNotes(record.id)}>
                           Save
                         </Button>
-                        <Button
-                          size="xs"
-                          variant="subtle"
+                        <Button 
+                          size="xs" 
+                          variant="light" 
                           onClick={() => setEditingNotes(prev => {
                             const { [record.id]: _, ...rest } = prev;
                             return rest;
@@ -130,10 +158,12 @@ function Collection() {
                       </Group>
                     </Stack>
                   ) : (
-                    <Stack gap="xs">
-                      <Text size="sm">{record.notes || 'No notes yet'}</Text>
-                      <Button
-                        size="xs"
+                    <Group justify="space-between" align="flex-start">
+                      <Text size="sm" style={{ whiteSpace: 'pre-wrap' }}>
+                        {record.notes || 'No notes yet'}
+                      </Text>
+                      <Button 
+                        size="xs" 
                         variant="light"
                         onClick={() => setEditingNotes(prev => ({
                           ...prev,
@@ -142,23 +172,32 @@ function Collection() {
                       >
                         Edit Notes
                       </Button>
-                    </Stack>
+                    </Group>
                   )}
                 </div>
 
-                <Button
-                  color="red"
-                  variant="light"
-                  size="xs"
-                  onClick={() => handleDelete(record.id)}
-                  loading={loading}
-                >
-                  Delete Record
-                </Button>
+                <Group justify="flex-end">
+                  <Button 
+                    color="red" 
+                    size="xs"
+                    variant="light"
+                    onClick={() => handleDelete(record.id)}
+                  >
+                    Delete
+                  </Button>
+                </Group>
               </Stack>
             </Card>
           </Grid.Col>
         ))}
+
+        {userRecords.length === 0 && (
+          <Grid.Col>
+            <Text ta="center" c="dimmed">
+              No records in your collection yet. Try scanning some vinyl records!
+            </Text>
+          </Grid.Col>
+        )}
       </Grid>
     </Container>
   );

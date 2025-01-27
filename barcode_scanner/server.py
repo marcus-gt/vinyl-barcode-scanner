@@ -169,13 +169,25 @@ def add_record():
         return jsonify({'success': False, 'error': 'Record data required'}), 400
     
     try:
+        # Log the record data before adding
+        print("\nRecord data to be added:")
+        for key, value in record_data.items():
+            print(f"{key}: {type(value).__name__} = {value}")
+        
         result = add_record_to_collection(user_id, record_data)
-        print(f"Add record result: {result}")
+        print(f"\nAdd record result: {result}")
+        
         if result['success']:
+            print("\nSuccessfully added record:")
+            print(f"Record ID: {result['record'].get('id')}")
             return jsonify({'success': True, 'record': result['record']}), 201
+            
+        print(f"\nFailed to add record: {result['error']}")
         return jsonify({'success': False, 'error': result['error']}), 400
     except Exception as e:
-        print(f"Error adding record: {str(e)}")
+        print(f"\nError adding record: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'error': f'Failed to add record: {str(e)}'}), 500
 
 @app.route('/api/records/<record_id>', methods=['DELETE'])
@@ -210,52 +222,58 @@ def update_notes(record_id):
 @app.route('/api/lookup/barcode/<barcode>', methods=['GET'])
 def lookup_barcode(barcode):
     try:
+        print(f"\n=== Looking up barcode: {barcode} ===")
         # Handle UPC to EAN conversion
         search_barcodes = [barcode]
         if len(barcode) == 12:
             # If it's a 12-digit UPC, also try with a leading zero
             search_barcodes.append('0' + barcode)
+            print(f"Added leading zero version: {search_barcodes[-1]}")
         elif len(barcode) == 13 and barcode.startswith('0'):
             # If it's a 13-digit EAN starting with 0, also try without it
             search_barcodes.append(barcode[1:])
+            print(f"Added version without leading zero: {search_barcodes[-1]}")
+
+        print(f"Trying barcodes: {search_barcodes}")
 
         # Try each barcode format
         for search_barcode in search_barcodes:
+            print(f"\nSearching for barcode: {search_barcode}")
             result = search_by_barcode(search_barcode)
+            print(f"Raw Discogs result: {result}")
+            
             if result:
                 # Found a match, process it
                 record = {
                     'artist': result.get('artist', 'Unknown Artist'),
                     'album': result.get('album'),
                     'year': result.get('year'),
+                    'release_year': result.get('release_year'),
                     'barcode': barcode,
-                    'label': result.get('label'),
-                    'genres': result.get('genres'),
-                    'styles': result.get('styles'),
+                    'genres': result.get('genres', []),
+                    'styles': result.get('styles', []),
+                    'musicians': result.get('musicians', []),
+                    'master_url': result.get('master_url'),
+                    'release_url': result.get('main_release_url')
                 }
+                print(f"Formatted record: {record}")
                 return jsonify({
                     'success': True,
                     'data': record
                 })
 
-        # If we get here, no results were found for any barcode format
+        # No match found
         return jsonify({
             'success': False,
-            'error': f'No record found for barcode {barcode}. This could mean:\n' +
-                    '1. The barcode is not in the Discogs database yet (common for new releases)\n' +
-                    '2. The barcode was not scanned correctly\n' +
-                    'You can try:\n' +
-                    '- Scanning the barcode again\n' +
-                    '- Manually entering the barcode\n' +
-                    '- Adding the release to Discogs if it\'s a new album'
-        })
-        
+            'error': 'No record found for this barcode'
+        }), 404
+
     except Exception as e:
-        print(f"Error looking up barcode {barcode}: {str(e)}")
+        print(f"Error looking up barcode: {str(e)}")
         return jsonify({
             'success': False,
-            'error': 'Failed to lookup record in Discogs database. Please try again.'
-        })
+            'error': 'Failed to lookup barcode'
+        }), 500
 
 if __name__ == '__main__':
     print("\nStarting server...")
