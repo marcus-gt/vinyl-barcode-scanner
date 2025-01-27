@@ -9,4 +9,12 @@ services:
         sync: false
       - key: FLASK_ENV
         value: production
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      - key: FLASK_SECRET_KEY
+        sync: false
     plan: free 
