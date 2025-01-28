@@ -66,10 +66,10 @@ export function Scanner() {
         musicians: record.musicians || [],
         master_url: record.master_url,
         release_url: record.release_url,
+        label: record.label,
         notes: ''
       };
       
-      console.log('Adding record to collection:', recordData);
       const response = await records.add(recordData);
       if (response.success) {
         setError('Added to collection!');
@@ -177,6 +177,7 @@ export function Scanner() {
                   {record.musicians && <Text size="sm">Musicians: {record.musicians.join(', ')}</Text>}
                   {record.year && <Text size="sm">Original Release Year: {record.year}</Text>}
                   {record.release_year && <Text size="sm">Current Release Year: {record.release_year}</Text>}
+                  {record.label && <Text size="sm">Label: {record.label}</Text>}
                   <Group gap="xs" mt="xs">
                     {record.master_url && (
                       <Button 

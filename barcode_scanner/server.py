@@ -276,9 +276,9 @@ def lookup_barcode(barcode):
                     'styles': result.get('styles', []),
                     'musicians': result.get('musicians', []),
                     'master_url': result.get('master_url'),
-                    'release_url': result.get('main_release_url')
+                    'release_url': result.get('main_release_url'),
+                    'label': result.get('label')
                 }
-                print(f"Formatted record: {record}")
                 return jsonify({
                     'success': True,
                     'data': record

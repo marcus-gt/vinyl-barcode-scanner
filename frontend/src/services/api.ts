@@ -48,9 +48,10 @@ export const records = {
 
 export const lookup = {
   byBarcode: async (barcode: string): Promise<ApiResponse<VinylRecord>> => {
-    console.log('Looking up barcode:', barcode);
-    const response = await api.get<ApiResponse<VinylRecord>>(`/api/lookup/barcode/${barcode}`);
-    console.log('Lookup response:', response.data);
-    return response.data;
+    const response = await api.get<{success: boolean, data: VinylRecord}>(`/api/lookup/barcode/${barcode}`);
+    return {
+      success: response.data.success,
+      data: response.data.data
+    };
   },
 }; 
