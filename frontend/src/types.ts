@@ -4,16 +4,16 @@ export interface VinylRecord {
   artist: string;
   album: string;
   year?: number;
-  release_year?: number;
   barcode?: string;
   genres?: string[];
   styles?: string[];
   musicians?: string[];
   master_url?: string;
-  release_url?: string;
+  current_release_url?: string;
+  current_release_year?: number;
   label?: string;
   notes?: string;
-  added_at?: string;
+  created_at?: string;
   updated_at?: string;
 }
 
