@@ -1,39 +1,32 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Container, Title, TextInput, Button, Paper, Stack, Text, Group, Box } from '@mantine/core';
-import { useZxing } from 'react-zxing';
-import { BarcodeFormat } from '@zxing/library';
+import { Container, Title, TextInput, Button, Paper, Stack, Text, Group } from '@mantine/core';
 import { lookup, records } from '../services/api';
 import type { VinylRecord } from '../types';
+import { BarcodeScanner } from '../components/BarcodeScanner';
 
 export function Scanner() {
-  const navigate = useNavigate();
   const [barcode, setBarcode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [record, setRecord] = useState<VinylRecord | null>(null);
   const [isScanning, setIsScanning] = useState(false);
 
-  const { ref } = useZxing({
-    onResult: async (result) => {
-      const code = result.getText();
-      setBarcode(code);
-      try {
-        const response = await lookup.byBarcode(code);
-        if (response.success && response.data) {
-          setRecord(response.data);
-          setError(null);
-        } else {
-          setError(response.error || 'Failed to find record');
-          setRecord(null);
-        }
-      } catch (err) {
-        setError('Failed to lookup barcode');
+  const handleScan = async (scannedBarcode: string) => {
+    setBarcode(scannedBarcode);
+    try {
+      const response = await lookup.byBarcode(scannedBarcode);
+      if (response.success && response.data) {
+        setRecord(response.data);
+        setError(null);
+      } else {
+        setError(response.error || 'Failed to find record');
         setRecord(null);
       }
-    },
-    paused: !isScanning
-  });
+    } catch (err) {
+      setError('Failed to lookup barcode');
+      setRecord(null);
+    }
+  };
 
   const handleManualLookup = async () => {
     try {
@@ -90,51 +83,7 @@ export function Scanner() {
         <Stack>
           {isScanning ? (
             <>
-              <Box 
-                pos="relative"
-                style={{ 
-                  width: '100%', 
-                  height: '300px',
-                  backgroundColor: '#f0f0f0',
-                  overflow: 'hidden'
-                }}
-              >
-                <video
-                  ref={ref}
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover'
-                  }}
-                />
-                <Box
-                  pos="absolute"
-                  top="50%"
-                  left="50%"
-                  style={{
-                    transform: 'translate(-50%, -50%)',
-                    border: '2px solid #ff4444',
-                    width: '80%',
-                    height: '100px',
-                    boxSizing: 'border-box',
-                    zIndex: 1
-                  }}
-                />
-                <Text 
-                  pos="absolute" 
-                  bottom={10} 
-                  left="50%" 
-                  style={{ 
-                    transform: 'translateX(-50%)',
-                    color: 'white',
-                    backgroundColor: 'rgba(0,0,0,0.5)',
-                    padding: '5px 10px',
-                    borderRadius: '4px'
-                  }}
-                >
-                  Center the barcode in the box
-                </Text>
-              </Box>
+              <BarcodeScanner onScan={handleScan} isScanning={isScanning} />
               <Button color="red" onClick={() => setIsScanning(false)}>
                 Stop Scanning
               </Button>
