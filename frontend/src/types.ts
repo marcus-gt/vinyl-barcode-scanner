@@ -5,6 +5,7 @@ export interface VinylRecord {
   album: string;
   year?: number;
   release_year?: number;
+  barcode?: string;
   genres?: string[];
   styles?: string[];
   musicians?: string[];

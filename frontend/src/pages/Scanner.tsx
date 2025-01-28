@@ -56,10 +56,20 @@ export function Scanner() {
     
     try {
       const recordData = {
-        ...record,
-        notes: '',
+        artist: record.artist,
+        album: record.album,
+        year: record.year,
+        release_year: record.release_year,
+        barcode: record.barcode,
+        genres: record.genres || [],
+        styles: record.styles || [],
+        musicians: record.musicians || [],
+        master_url: record.master_url,
+        release_url: record.release_url,
+        notes: ''
       };
       
+      console.log('Adding record to collection:', recordData);
       const response = await records.add(recordData);
       if (response.success) {
         setError('Added to collection!');
@@ -67,6 +77,7 @@ export function Scanner() {
         setError(response.error || 'Failed to add to collection');
       }
     } catch (err) {
+      console.error('Error adding to collection:', err);
       setError('Failed to add to collection');
     }
   };

@@ -64,29 +64,46 @@ def get_user_collection(user_id: str) -> Dict[str, Any]:
 def add_record_to_collection(user_id: str, record_data: Dict[str, Any]) -> Dict[str, Any]:
     """Add a record to user's collection."""
     try:
-        # Prepare record data
+        print("\n=== Adding Record to Collection ===")
+        print(f"User ID: {user_id}")
+        print(f"Raw record data: {record_data}")
+        
+        # Map fields from API response to database schema
         record_to_insert = {
             'user_id': user_id,
+            'created_at': datetime.utcnow().isoformat(),
+            'updated_at': datetime.utcnow().isoformat(),
             'artist': record_data.get('artist'),
             'album': record_data.get('album'),
             'year': record_data.get('year'),
-            'barcode': record_data.get('barcode'),
+            'label': record_data.get('label'),
             'genres': record_data.get('genres', []),
             'styles': record_data.get('styles', []),
             'musicians': record_data.get('musicians', []),
             'master_url': record_data.get('master_url'),
-            'release_url': record_data.get('release_url'),
-            'notes': record_data.get('notes', ''),
-            'added_at': datetime.utcnow().isoformat(),
-            'updated_at': datetime.utcnow().isoformat()
+            'current_release_url': record_data.get('release_url'),  # Map from release_url
+            'current_release_year': record_data.get('release_year'),  # Map from release_year
+            'barcode': record_data.get('barcode'),
+            'notes': record_data.get('notes', '')
         }
         
-        print(f"Adding record to collection: {record_to_insert}")
+        print("\nPrepared record data:")
+        for key, value in record_to_insert.items():
+            print(f"{key}: {type(value).__name__} = {value}")
+        
+        print("\nSending to Supabase...")
         response = supabase.table('vinyl_records').insert(record_to_insert).execute()
-        print(f"Database response: {response.data}")
+        print(f"Supabase response: {response.data}")
+        
+        if not response.data:
+            print("Error: No data returned from Supabase")
+            return {"success": False, "error": "No data returned from database"}
+            
         return {"success": True, "record": response.data[0]}
     except Exception as e:
-        print(f"Error adding record: {str(e)}")
+        print(f"\nError adding record: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return {"success": False, "error": str(e)}
 
 def remove_record_from_collection(user_id: str, record_id: str) -> Dict[str, Any]:

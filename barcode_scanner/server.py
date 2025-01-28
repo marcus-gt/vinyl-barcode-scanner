@@ -161,18 +161,40 @@ def add_record():
         print("Error: User not authenticated")
         return jsonify({'success': False, 'error': 'Not authenticated'}), 401
     
-    record_data = request.get_json()
-    print(f"Received record data: {record_data}")
-    
-    if not record_data:
-        print("Error: No record data provided")
-        return jsonify({'success': False, 'error': 'Record data required'}), 400
-    
     try:
+        record_data = request.get_json()
+        print(f"Raw request data: {request.data}")
+        print(f"Parsed record data: {record_data}")
+        
+        if not record_data:
+            print("Error: No record data provided")
+            return jsonify({'success': False, 'error': 'Record data required'}), 400
+        
         # Log the record data before adding
         print("\nRecord data to be added:")
         for key, value in record_data.items():
             print(f"{key}: {type(value).__name__} = {value}")
+        
+        # Ensure required fields are present
+        required_fields = ['artist', 'album']
+        missing_fields = [field for field in required_fields if not record_data.get(field)]
+        if missing_fields:
+            error_msg = f"Missing required fields: {', '.join(missing_fields)}"
+            print(f"Error: {error_msg}")
+            return jsonify({'success': False, 'error': error_msg}), 400
+        
+        # Validate data types
+        if not isinstance(record_data.get('genres', []), list):
+            print("Error: genres must be a list")
+            return jsonify({'success': False, 'error': 'genres must be a list'}), 400
+            
+        if not isinstance(record_data.get('styles', []), list):
+            print("Error: styles must be a list")
+            return jsonify({'success': False, 'error': 'styles must be a list'}), 400
+            
+        if not isinstance(record_data.get('musicians', []), list):
+            print("Error: musicians must be a list")
+            return jsonify({'success': False, 'error': 'musicians must be a list'}), 400
         
         result = add_record_to_collection(user_id, record_data)
         print(f"\nAdd record result: {result}")
