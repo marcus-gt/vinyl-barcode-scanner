@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
-import { Box, Text, Button } from '@mantine/core';
+import { Box, Text, Button, Loader } from '@mantine/core';
 
 interface BarcodeScannerProps {
   onScan: (barcode: string) => void;
   isScanning: boolean;
+  isLoading: boolean;
 }
 
 interface CameraDevice {
@@ -12,67 +13,77 @@ interface CameraDevice {
   label: string;
 }
 
-export function BarcodeScanner({ onScan, isScanning }: BarcodeScannerProps) {
+export function BarcodeScanner({ onScan, isScanning, isLoading }: BarcodeScannerProps) {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [cameras, setCameras] = useState<CameraDevice[]>([]);
   const [isRunning, setIsRunning] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+
+  const startScanning = async (cameraId: string) => {
+    if (!scannerRef.current) return;
+
+    try {
+      await scannerRef.current.start(
+        cameraId,
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 150 },
+          aspectRatio: 1.0
+        },
+        (decodedText) => {
+          console.log("Barcode detected:", decodedText);
+          onScan(decodedText);
+          if (scannerRef.current) {
+            scannerRef.current.pause(true);
+            setIsPaused(true);
+          }
+        },
+        (errorMessage) => {
+          if (!errorMessage.includes("QR code parse error") && 
+              !errorMessage.includes("No MultiFormat Readers were able to detect the code")) {
+            console.log("Scanner error:", errorMessage);
+          }
+        }
+      );
+      setIsRunning(true);
+      setIsPaused(false);
+      console.log("Camera started");
+    } catch (err) {
+      console.error("Failed to start camera:", err);
+      setError("Failed to start camera. Please try again.");
+    }
+  };
 
   useEffect(() => {
     const initializeScanner = async () => {
       if (isScanning && !scannerRef.current) {
         console.log("Initializing scanner...");
         try {
-          // Create scanner instance
           scannerRef.current = new Html5Qrcode("reader");
           console.log("Scanner created");
 
-          // Get list of cameras
           const devices = await Html5Qrcode.getCameras();
           console.log("Available cameras:", devices);
           setCameras(devices);
 
           if (devices && devices.length > 0) {
-            // Start scanning with the first available camera
-            const cameraId = devices[0].id;
-            console.log("Starting camera:", cameraId);
-
-            await scannerRef.current.start(
-              cameraId,
-              {
-                fps: 10,
-                qrbox: { width: 250, height: 150 },
-                aspectRatio: 1.0
-              },
-              (decodedText) => {
-                console.log("Barcode detected:", decodedText);
-                onScan(decodedText);
-                if (scannerRef.current && isRunning) {
-                  scannerRef.current.pause();
-                }
-              },
-              (errorMessage) => {
-                console.log("Raw scanner error:", errorMessage);
-                if (!errorMessage.includes("QR code parse error")) {
-                  console.log("Scanner error:", errorMessage);
-                }
-              }
-            );
-            setIsRunning(true);
-            console.log("Camera started");
+            await startScanning(devices[0].id);
           } else {
             setError("No cameras found. Please make sure your device has a camera and it's not in use.");
           }
         } catch (err) {
           console.error("Failed to initialize scanner:", err);
-          if (err instanceof Error && err.message.includes("NotAllowedError")) {
-            setError("Camera access was denied. Please allow camera access in your browser settings.");
-          } else if (err instanceof Error && err.message.includes("NotFoundError")) {
-            setError("No camera found. Please make sure your device has a camera and it's not in use.");
-          } else if (err instanceof Error && err.message.includes("NotReadableError")) {
-            setError("Camera is in use by another application. Please close other apps using the camera.");
-          } else {
-            setError("Failed to initialize scanner. Please try again.");
+          if (err instanceof Error) {
+            if (err.message.includes("NotAllowedError")) {
+              setError("Camera access was denied. Please allow camera access in your browser settings.");
+            } else if (err.message.includes("NotFoundError")) {
+              setError("No camera found. Please make sure your device has a camera and it's not in use.");
+            } else if (err.message.includes("NotReadableError")) {
+              setError("Camera is in use by another application. Please close other apps using the camera.");
+            } else {
+              setError("Failed to initialize scanner. Please try again.");
+            }
           }
         }
       }
@@ -80,7 +91,6 @@ export function BarcodeScanner({ onScan, isScanning }: BarcodeScannerProps) {
 
     initializeScanner();
 
-    // Cleanup when isScanning becomes false or on unmount
     return () => {
       console.log("Cleaning up scanner...");
       if (scannerRef.current && isRunning) {
@@ -89,6 +99,7 @@ export function BarcodeScanner({ onScan, isScanning }: BarcodeScannerProps) {
             console.log("Scanner stopped");
             scannerRef.current = null;
             setIsRunning(false);
+            setIsPaused(false);
             setError(null);
           })
           .catch((err) => {
@@ -96,7 +107,28 @@ export function BarcodeScanner({ onScan, isScanning }: BarcodeScannerProps) {
           });
       }
     };
-  }, [isScanning, onScan]);
+  }, [isScanning]);
+
+  // Effect to handle loading state changes
+  useEffect(() => {
+    if (!isLoading && isPaused) {
+      // When loading finishes and we were paused, we can allow next scan
+      setIsPaused(true);
+    }
+  }, [isLoading]);
+
+  const handleNextScan = async () => {
+    if (scannerRef.current && cameras.length > 0) {
+      try {
+        await scannerRef.current.resume();
+        setIsPaused(false);
+      } catch (err) {
+        console.error("Failed to resume scanner:", err);
+        // If resume fails, try to restart the scanner
+        await startScanning(cameras[0].id);
+      }
+    }
+  };
 
   if (error) {
     return (
@@ -124,6 +156,7 @@ export function BarcodeScanner({ onScan, isScanning }: BarcodeScannerProps) {
                   console.log("Scanner stopped");
                   scannerRef.current = null;
                   setIsRunning(false);
+                  setIsPaused(false);
                 })
                 .catch((err) => {
                   console.error("Error stopping scanner:", err);
@@ -154,7 +187,24 @@ export function BarcodeScanner({ onScan, isScanning }: BarcodeScannerProps) {
           height: '100%'
         }}
       />
-      {cameras.length > 0 && isRunning && (
+      <Box mt="md" style={{ textAlign: 'center' }}>
+        {isPaused && !isLoading && (
+          <Button 
+            onClick={handleNextScan}
+            variant="filled"
+            color="blue"
+          >
+            Next Scan
+          </Button>
+        )}
+        {isLoading && (
+          <Box style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
+            <Loader size="sm" />
+            <Text>Looking up record...</Text>
+          </Box>
+        )}
+      </Box>
+      {cameras.length > 0 && isRunning && !isPaused && !isLoading && (
         <Text 
           pos="absolute" 
           bottom={10} 
