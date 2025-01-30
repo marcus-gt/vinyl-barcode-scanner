@@ -1,20 +1,26 @@
 services:
   - type: web
-    name: vinyl-barcode-scanner
+    name: vinyl-collection-manager
     runtime: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: cd barcode-scanner && gunicorn server:app
+    buildCommand: pip install -r requirements.txt && cd frontend && npm install && npm run build
+    startCommand: python -m barcode_scanner.server
     envVars:
-      - key: DISCOGS_TOKEN
-        sync: false
+      - key: PYTHON_VERSION
+        value: 3.11.0
       - key: FLASK_ENV
         value: production
+      - key: FLASK_SECRET_KEY
+        generateValue: true
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_KEY
         sync: false
       - key: SUPABASE_JWT_SECRET
         sync: false
-      - key: FLASK_SECRET_KEY
+      - key: DISCOGS_TOKEN
         sync: false
-    plan: free 
+
+databases:
+  - name: vinyl-collection-db
+    databaseName: vinyl_collection
+    ipAllowList: [] 

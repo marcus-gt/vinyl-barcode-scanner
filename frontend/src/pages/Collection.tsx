@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Container, Title, TextInput, Button, Group, Stack, Text, ActionIcon, Modal, Tooltip, Popover } from '@mantine/core';
 import { DataTable, DataTableSortStatus } from 'mantine-datatable';
-import { IconEdit, IconTrash, IconExternalLink, IconNotes, IconDownload } from '@tabler/icons-react';
+import { IconTrash, IconExternalLink, IconNotes, IconDownload } from '@tabler/icons-react';
 import { records } from '../services/api';
 import type { VinylRecord } from '../types';
 
